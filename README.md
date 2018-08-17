@@ -21,7 +21,7 @@ The static model is based on CNN and MLP. The performance measured by unweighted
 
 The static model is based on RNN. The UA recall can achieve 47.2%.
 
-The ensemble model is based on bagging, maxout-unit and interpolaton. The UA recall implemented by interpolaton can achieve 50.5%.
+The ensemble model is based on bagging, maxout-unit and interpolation. The UA recall implemented by interpolation can achieve 50.5%.
 
 
 ## Dataset
