@@ -67,7 +67,6 @@ The link contains the following files:
 - fau_test_length_lld_delta: The number of frames of each utterance of dynamic model test set.
 
 
-
 ## Running the tests
 For static model, running the following command:
 
