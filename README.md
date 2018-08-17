@@ -5,14 +5,13 @@
 
 What things you need to install the software.
 
-```
 <pre>- Tensorflow
 * Keras
 - Numpy
 - Matplotlib
 - Scipy
 - Python(>= 3.5.5)
-```
+
 
 ## Introduction
 
@@ -50,7 +49,7 @@ The acoustic features of FAU-Aibo corpus and other data are available in the lin
 [Download link](https://l.facebook.com/l.php?u=https%3A%2F%2Fdrive.google.com%2Fdrive%2Ffolders%2F1Q1P405kr2tJZ59CQcL6jo1jdrC5yTxar%3Fusp%3Dsharing&h=AT2uCf18Q5BagEwkJL-ykomIZ1KHOFXlqDez9o12NRIoiPbW-Jd4jbevdS0zVF4cll4KQxdaPyBhn-3bjypt5VetnvuGqWs2LGTEdJtcZOLz-R6GlIcuA-UeX8ep7w1Q7P4Xz2kI0f0)
 
 The link contains the following files:
-```
+
 - fau_train.arff: Acoustic features of static model training set.
 - fau_test.arff: Acoustic features of static model test set.
 - CSFtrain_nor.arff: Acoustic features of static model training set after CSHE.
@@ -67,7 +66,7 @@ The link contains the following files:
 - fau_train_length_lld_delta: The number of frames of each utterance of dynamic model training set.
 - fau_test_length_lld_delta: The number of frames of each utterance of dynamic model test set.
 
-```
+
 
 ## Running the tests
 For static model, running the following command:
