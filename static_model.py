@@ -77,39 +77,25 @@ def train_CNN(train_data, train_label, train_size, test_data, test_label, test_s
 
 		# 8x6x40
 		conv1_1 = Conv2D(filters=40,kernel_size=(1,1),strides=(2,2),padding='same', activation='relu', name='conv1_1')(cnn_input)
-		#conv1_1 = Dropout(rate=0.3)(conv1_1)
 		conv1_2 = Conv2D(filters=40,kernel_size=(3,3),strides=(2,2),padding='same', activation='relu', name='conv1_2')(cnn_input)
-		#conv1_2 = Dropout(rate=0.3)(conv1_2)
 		conv1_3 = Conv2D(filters=40,kernel_size=(5,5),strides=(2,2),padding='same', activation='relu', name='conv1_3')(cnn_input)
-		#conv1_3 = Dropout(rate=0.3)(conv1_3)
 		conv1_4 = Conv2D(filters=40,kernel_size=(7,7),strides=(2,2),padding='same', activation='relu', name='conv1_4')(cnn_input)
-		#conv1_4 = Dropout(rate=0.3)(conv1_4)
 		conv1_5 = Conv2D(filters=40,kernel_size=(9,9),strides=(2,2),padding='same', activation='relu', name='conv1_5')(cnn_input)
-		#conv1_5 = Dropout(rate=0.3)(conv1_5)
 		conv1_maxout = maximum([conv1_1, conv1_2, conv1_3, conv1_4, conv1_5], name='conv_max1')
 		#4x3x30
 		conv2_1 = Conv2D(filters=30,kernel_size=(1,1),strides=(1,1),padding='same', activation='relu', name='conv2_1')(conv1_maxout)
-		#conv2_1 = Dropout(rate=0.3)(conv2_1)
 		conv2_2 = Conv2D(filters=30,kernel_size=(3,3),strides=(1,1),padding='same', activation='relu', name='conv2_2')(conv1_maxout)
-		#conv2_2 = Dropout(rate=0.3)(conv2_2)
 		conv2_3 = Conv2D(filters=30,kernel_size=(5,5),strides=(1,1),padding='same', activation='relu', name='conv2_3')(conv1_maxout)
-		#conv2_3 = Dropout(rate=0.3)(conv2_3)
 		conv2_4 = Conv2D(filters=30,kernel_size=(7,7),strides=(1,1),padding='same', activation='relu', name='conv2_4')(conv1_maxout)
-		#conv2_4 = Dropout(rate=0.3)(conv2_4)
 		conv2_maxout = maximum([conv2_1, conv2_2, conv2_3, conv2_4], name='conv_max2')
 		#2x2x20
 		conv3_1 = Conv2D(filters=20,kernel_size=(1,1),strides=(1,1),padding='same', activation='relu', name='conv3_1')(conv2_maxout)
-		#conv3_1 = Dropout(rate=0.3)(conv3_1)
 		conv3_2 = Conv2D(filters=20,kernel_size=(3,3),strides=(1,1),padding='same', activation='relu', name='conv3_2')(conv2_maxout)
-		#conv3_2 = Dropout(rate=0.3)(conv3_2)
 		conv3_3 = Conv2D(filters=20,kernel_size=(5,5),strides=(1,1),padding='same', activation='relu', name='conv3_3')(conv2_maxout)
-		#conv3_3 = Dropout(rate=0.3)(conv3_3)
 		conv3_maxout = maximum([conv3_1, conv3_2, conv3_3], name='conv_max3')
 		#1x1x10
 		conv4_1 = Conv2D(filters=10, kernel_size=(1,1),strides=(1,1),padding='same', activation='relu', name='conv4_1')(conv3_maxout)
-		#conv4_1 = Dropout(rate=0.3)(conv4_1)
 		conv4_2 = Conv2D(filters=10, kernel_size=(3,3),strides=(1,1),padding='same', activation='relu', name='conv4_2')(conv3_maxout)
-		#conv4_2 = Dropout(rate=0.3)(conv4_2)
 		conv4_maxout = maximum([conv4_1, conv4_2], name='conv_max4')
 
 
@@ -135,7 +121,6 @@ def train_CNN(train_data, train_label, train_size, test_data, test_label, test_s
 		if args.load_model == '':
 			adam = Adam(lr=args.learning_rate, decay=args.decay)
 			model.compile(loss=weighted_loss(r=data_weights), optimizer=adam, metrics=['accuracy'])
-			#model.compile(loss='categorical_crossentropy', optimizer=adam, metrics=['accuracy'])
 			earlystopping = EarlyStopping(monitor='loss', min_delta=0, patience=0)
 			callbacks_list = [earlystopping]
 			history = model.fit(x=cnn_train_data, y=train_label, batch_size=args.batch_size, epochs=args.train_epochs, verbose=2, 
