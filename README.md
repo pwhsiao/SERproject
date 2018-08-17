@@ -6,7 +6,7 @@
 What things you need to install the software.
 
 ```
-> -  Tensorflow
+> - Tensorflow
 * Keras
 - Numpy
 - Matplotlib
