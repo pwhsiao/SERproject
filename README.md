@@ -50,16 +50,16 @@ The acoustic features of FAU-Aibo corpus and other data are available in the lin
 
 The link contains the following files:
 -  Static model
-   1. fau_train.arff: Acoustic features of training set.
-   2. fau_test.arff: Acoustic features of test set.
-   3. CSFtrain_nor.arff: Acoustic features of training set after CSHE.
-   4. CSFtest_nor.arff: Acoustic features of test set after CSHE.
+   * fau_train.arff: Acoustic features of training set.
+   * fau_test.arff: Acoustic features of test set.
+   * CSFtrain_nor.arff: Acoustic features of training set after CSHE.
+   * CSFtest_nor.arff: Acoustic features of test set after CSHE.
 
 -  Dynamic model
-   1. fau_train_lld_delta.npy: Acoustic features of training set.
-   2. fau_test_lld_delta.npy: Acoustic features of test set.
-   3. fau_train_lld_delta_fea_sn_pad.npy: Acoustic features of training set after CMVN and padding.
-   4. fau_test_lld_delta_fea_sn_pad.npy: Acoustic features of test set after CMVN and padding.
+   * fau_train_lld_delta.npy: Acoustic features of training set.
+   * fau_test_lld_delta.npy: Acoustic features of test set.
+   * fau_train_lld_delta_fea_sn_pad.npy: Acoustic features of training set after CMVN and padding.
+   * fau_test_lld_delta_fea_sn_pad.npy: Acoustic features of test set after CMVN and padding.
 
 - fau_train_label.npy: True label of training set.
 - fau_test_label.npy: True label of test set.
