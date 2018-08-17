@@ -73,13 +73,12 @@ def train(train_data, train_label, train_size,test_data, test_label, test_size, 
 	class_weight = {0: 1.1, 1: 0.5, 2: 0.2, 3: 1.5, 4: 1.4}
 	data_weights = []
 	data_weights.append([1.1, 0.5, 0.2, 1.5, 1.4])# original
-	#data_weights.append([0.8, 0.5, 0.2, 0.9, 0.9])# gan
-	#data_weights.append([1.1, 0.5, 0.2, 1.5]) # (A E (N+R) P)
-	#data_weights.append([0.3, 0.2, 1.4]) # ((A+E+P) N R)
+
 	data_weights = np.asarray(data_weights)
 	# static model data
 	mlp_train_data, _, _, _= read_2D_data('./data/CS_Ftrain_nor.arff')
 	mlp_test_data, _, _, _ = read_2D_data('./data/CS_Ftest_nor.arff')
+
 	cnn_train_data = np.reshape(mlp_train_data, (train_data.shape[0], 16, 12, 2))
 	cnn_test_data = np.reshape(mlp_test_data, (test_data.shape[0], 16, 12, 2))
 
@@ -88,27 +87,16 @@ def train(train_data, train_label, train_size,test_data, test_label, test_size, 
 	cnn_input = Input(shape=[16, 12, 2], dtype='float32', name='cnn_input')
 
 	# LSTM module
-	#lstm1 = LSTM(args.lstm_units, activation='tanh', return_sequences=True, dropout=0.4, recurrent_dropout=0.2, name='lstm1')(dynamic_input)
-	blstm_f, blstm_b = Bidirectional(LSTM(args.lstm_units, activation='tanh', return_sequences=True, dropout=0.4, recurrent_dropout=0.2), merge_mode=None ,name='blstm_1')(dynamic_input)
-	blstm_out = maximum([blstm_f, blstm_b])
+	lstm1 = LSTM(args.lstm_units, activation='tanh', return_sequences=True, dropout=0.4, recurrent_dropout=0.2, name='lstm1')(dynamic_input)
+	
 	# attention mechanism module (forward)
-	attention_dense1_f = Dense(args.attention_layer_units, activation='tanh', use_bias=False, name='attention_dense1_f')(blstm_f)
-	attention_dense2_f = Dense(1, use_bias=False, name='attention_dense2_f')(attention_dense1_f)
-	attention_flatten_f = Flatten()(attention_dense2_f)
-	attention_softmax_f = Activation('softmax', name='attention_weights_f')(attention_flatten_f)
-
-	# attention mechanism module (backward)
-	attention_dense1_b = Dense(args.attention_layer_units, activation='tanh', use_bias=False, name='attention_dense1_b')(blstm_b)
-	attention_dense2_b = Dense(1, use_bias=False, name='attention_dense2_b')(attention_dense1_b)
-	#attention_conv1_b = Conv1D(filters=50, kernel_size=7, strides=1, padding='same', activation='tanh', use_bias=False, name='attention_conv1_b')(blstm_b)
-	#attention_conv2_b = Conv1D(filters=1, kernel_size=7, strides=1, padding='same', use_bias=False, name='attention_conv2_b')(attention_conv1)
-	attention_flatten_b = Flatten()(attention_dense2_b)
-	attention_softmax_b = Activation('softmax', name='attention_weights_b')(attention_flatten_b)
-
-	attention_softmax = average([attention_softmax_f, attention_softmax_b])
+	attention_dense1 = Dense(args.attention_layer_units, activation='tanh', use_bias=False, name='attention_dense1_f')(lstm1)
+	attention_dense2 = Dense(1, use_bias=False, name='attention_dense2_f')(attention_dense1)
+	attention_flatten = Flatten()(attention_dense2)
+	attention_softmax = Activation('softmax', name='attention_weights_f')(attention_flatten)
 	attention_repeat = RepeatVector(args.lstm_units)(attention_softmax)
 	attention_permute = Permute([2, 1])(attention_repeat)
-	attention_multiply = multiply([blstm_out, attention_permute])
+	attention_multiply = multiply([lstm1, attention_permute])
 	attention_sum = Lambda(lambda xin: K.sum(xin, axis=1), name='attention_sum')(attention_multiply)# 60
 
 	# MLP module
@@ -156,19 +144,17 @@ def train(train_data, train_label, train_size,test_data, test_label, test_size, 
 	# classifier module
 	ensemble_maxout = maximum([attention_sum, mlp_output, cnn_output])# 60
 	emotion_output = Dense(args.classes, activation='softmax', name='emotion_output')(ensemble_maxout)
-	#emotion_output2 = Dense(2, activation='softmax', name='emotion_output2')(ensemble_maxout)
-	#gender_output = Dense(2, activation='softmax', name='gender_output')(ensemble_maxout)
+	
 	model = Model(inputs=[dynamic_input, mlp_input, cnn_input], outputs=emotion_output)
 	model.summary()
 
 	if args.load_model == '':
 		#training
 		optimizer = Adam(lr=args.learning_rate, decay=args.decay)
-		#optimizer = Nadam()
 		model.compile(optimizer=optimizer, loss=weighted_loss(r=data_weights), metrics=['accuracy'])
 		earlystopping = EarlyStopping(monitor='loss', min_delta=0, patience=0)
-		#checkpoint = ModelCheckpoint(filepath='dynamic_checkpoint/best_model.hdf5', monitor='loss', save_best_only=True)
-		callbacks_list = [earlystopping]
+		checkpoint = ModelCheckpoint(filepath='dynamic_checkpoint/best_model.hdf5', monitor='loss', save_best_only=True)
+		callbacks_list = [earlystopping, checkpoint]
 		model.fit(x=[train_data, mlp_train_data, cnn_train_data], y=train_label, batch_size=args.batch_size, epochs=args.train_epochs
 							, verbose=2, callbacks=callbacks_list) 
 		# save the model
@@ -181,42 +167,18 @@ def train(train_data, train_label, train_size,test_data, test_label, test_size, 
 
 	#predict
 	predict = model.predict([test_data, mlp_test_data, cnn_test_data])
-	np.save('maxout_ensemble_predict_4961.npy', predict)
 	show_confusion_matrix(predict, test_label, test_size)
-
-	#predict_2 = model.predict([train_data, mlp_train_data, cnn_train_data])
-	#np.save('maxout_ensemble_teacher_label.npy', predict_2)
-	#show_confusion_matrix(predict_2, train_label, train_size)
 
 
 if __name__ == '__main__':
 	args = get_arguments()
 	emotion = ['Anger', 'Emphatic', 'Neutral', 'Positive', 'Rest']
 	print('==========================================================')
-	# No normalize
 	
-	if args.normalize_mode == 0:
-		train_data = np.load('./data/fau_train_lld_delta_pad.npy')
-		test_data = np.load('./data/fau_test_lld_delta_pad.npy')
-		print ('Normalization mode: none')
-	# Feature-wise normalize
-	elif args.normalize_mode == 1:
-		train_data = np.load('./data/fau_train_lld_delta_feanor_-1_1_pad.npy')
-		test_data = np.load('./data/fau_test_lld_delta_feanor_-1_1_pad.npy')
-		print ('Normalization mode: feature-wise ')
-	# Audio-wise normalize
-	elif args.normalize_mode == 2:
-		train_data = np.load('./data/fau_train_lld_delta_audnor_-1_1_pad.npy')
-		test_data = np.load('./data/fau_test_lld_delta_audnor_-1_1_pad.npy')
-		print ('Normalization mode: audio-wise')
-	elif args.normalize_mode == 3:
-		train_data = np.load('./data/fau_train_lld_delta_fea_sn_pad.npy')
-		test_data = np.load('./data/fau_test_lld_delta_fea_sn_pad.npy')
-		#train_data = np.load('modified_dynamic_fau_train_cmvn_sn_pad.npy')
-		#test_data = np.load('modified_dynamic_fau_test_cmvn_sn_pad.npy')
-		print ('Normalization mode: speaker-wise')
-
-	#train_label = np.load('./data/fau_train_label.npy')
+	train_data = np.load('./data/fau_train_lld_delta_fea_sn_pad.npy')
+	test_data = np.load('./data/fau_test_lld_delta_fea_sn_pad.npy')
+		
+	train_label = np.load('./data/fau_train_label.npy')
 	train_size = np.array([881, 2093, 5590, 674, 721])
 	train_seq_length = np.load('./data/fau_train_length_lld_delta.npy')
 	test_label = np.load('./data/fau_test_label.npy')
@@ -224,15 +186,6 @@ if __name__ == '__main__':
 	test_seq_length = np.load('./data/fau_test_length_lld_delta.npy')
 	max_length = max(np.amax(train_seq_length), np.amax(test_seq_length))
 
-	dynamic_teacher_label = np.load('dynamic_teacher_label_4634.npy')
-	mlp_teacher_label = np.load('mlp_teacher_label_4562.npy')
-	conv_teacher_label = np.load('conv_teacher_label_4642.npy')
-	train_label = dynamic_teacher_label*0.5 + mlp_teacher_label*0.3 + conv_teacher_label*0.2
-
-	#train_data = sequence.pad_sequences(train_data, maxlen=max_length, dtype='float32')
-	#test_data = sequence.pad_sequences(test_data, maxlen=max_length, dtype='float32')
-
-	
 	print('==========================================================')
 	print('Train data and label: {} , {}'.format(train_data.shape, train_label.shape))
 	print('Test data and label: {} , {}'.format(test_data.shape, test_label.shape))
