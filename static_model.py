@@ -4,11 +4,7 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import math
-from scipy.spatial import distance
-from sklearn.metrics.pairwise import cosine_similarity
-from fractions import gcd
-from keras import regularizers
-from keras.layers.advanced_activations import *
+
 from keras.layers import *
 from keras.models import *
 from keras.optimizers import SGD, Adam
@@ -18,9 +14,7 @@ from utils import *
 from keras import backend as K
 from keras.models import load_model
 from keras.utils import plot_model, print_summary
-from ddrop import DropConnectDense, DropConnect
 
-import skimage
 MODEL_ROOT_DIR = './static_model/'
 
 # Learning parameters
@@ -81,19 +75,6 @@ def train_CNN(train_data, train_label, train_size, test_data, test_label, test_s
 		cnn_train_data = np.reshape(train_data, (train_data.shape[0], args.llds, args.functionals, args.delta))
 		cnn_test_data = np.reshape(test_data, (test_data.shape[0], args.llds, args.functionals, args.delta))
 
-		# 16x12x2   384000
-		# cnn_input = Input(shape=[args.llds, args.functionals, args.delta], dtype='float32', name='cnn_input')
-		# conv1 = Conv2D(filters=40,kernel_size=(5,5),strides=(2,2),padding='same', activation='relu', name='conv1')(cnn_input)
-		# conv1 = MaxPooling2D(pool_size=(5,5), strides=(1,1), padding='same', name='max_pool1')(conv1)
-		# conv2 = Conv2D(filters=40,kernel_size=(3,3),strides=(2,2),padding='same', activation='relu', name='conv2')(conv1)
-		# conv2 = MaxPooling2D(pool_size=(3,3), strides=(1,1), padding='same', name='max_pool2')(conv2)
-		# conv3 = Conv2D(filters=40,kernel_size=(2,2),strides=(2,2),padding='same', activation='relu', name='conv3')(conv2)
-		# conv3 = MaxPooling2D(pool_size=(2,2), strides=(1,1), padding='same', name='max_pool3')(conv3)
-		# conv4 = Conv2D(filters=40,kernel_size=(1,1),strides=(2,2),padding='same', activation='relu', name='conv4')(conv3)
-		# conv4 = MaxPooling2D(pool_size=(1,1), strides=(1,1), padding='same', name='max_pool4')(conv4)
-		# conv_flatten = Flatten()(conv4)
-		# output = Dense(units=args.classes, activation='softmax', name='output')(conv_flatten)
-
 		# 8x6x40
 		conv1_1 = Conv2D(filters=40,kernel_size=(1,1),strides=(2,2),padding='same', activation='relu', name='conv1_1')(cnn_input)
 		#conv1_1 = Dropout(rate=0.3)(conv1_1)
@@ -142,11 +123,6 @@ def train_CNN(train_data, train_label, train_size, test_data, test_label, test_s
 		attention_interp_2 = Lambda(interpolation, arguments={'size': (8,6)}, name='att_up2')(attention_conv_3)# 8x6x20
 		attention_conv_4 = Conv2D(filters=10, kernel_size=(2,2), padding='same', activation='relu', use_bias=False, name='att_conv4')(attention_interp_2)#8x6x1
 		attention_weights = Activation('softmax', name='attention_weights')(attention_conv_4)
-		# # attention_flatten = Flatten()(attention_conv_4)# 48
-		# # attention_weights = Activation('softmax', name='attention_weights')(attention_flatten)# 48
-		# # attention_weights = RepeatVector(10)(attention_weights)# 10x48
-		# # attention_weights = Permute([2, 1])(attention_weights)# 48x10
-		# # attention_weights = Reshape((8,6,10))(attention_weights)# 8x6x10
 
 		attention_representation = multiply([conv4_maxout, attention_weights])
 		attention_add = add([conv4_maxout, attention_representation])
@@ -171,12 +147,7 @@ def train_CNN(train_data, train_label, train_size, test_data, test_label, test_s
 			model.load_weights(args.model_root_dir + args.load_model)
 
 	
-		#get_outputs = K.function([(model.get_layer(name='conv1_1').input, model.get_layer(name='mlp_hidden1').input), K.learning_phase()], [model.get_layer(name='output').input])
-		#outputs = get_outputs([(cnn_test_data[:], test_data[:]), 0])[0]
-		#np.save('./t-SNE/cnn_test_hidden_output.npy', outputs)
-		#a = cnn_test_data[0]
-		#a = np.reshape(a, (1, args.llds, args.functionals, args.delta))
-		predict = model.predict(cnn_test_data, verbose=1)
+		predict = model.predict(cnn_test_data)
 		show_confusion_matrix(predict, test_label, test_size)
 		
 		
@@ -191,21 +162,17 @@ def train_MLP(train_data, train_label, train_size, test_data, test_label, test_s
 	mlp_input = Input(shape=[args.static_features], dtype='float32', name='mlp_input')
 	hidden_1 = Dense(units=30, activation='relu', name='hidden1')(mlp_input)
 	hidden_2 = Dense(units=30, activation='relu', name='hidden2')(hidden_1)
-	#hidden_3 = Dense(units=30, activation='relu', name='hidden3')(hidden_2)
-	output = Dense(units=5, activation='softmax', name='output')(hidden_2)
+	hidden_3 = Dense(units=30, activation='relu', name='hidden3')(hidden_2)
+	output = Dense(units=5, activation='softmax', name='output')(hidden_3)
 	model = Model(inputs=mlp_input, outputs=output)
 	model.summary()
 
-	#opts = tf.profiler.ProfileOptionBuilder.float_operation()    
-	#flops = tf.profiler.profile(tf.get_default_graph(), run_meta=tf.RunMetadata(), cmd='op', options=opts)
-	#print('TF stats gives',flops.total_float_ops)
 	if args.load_model == '':
 		adam = Adam(lr=args.learning_rate, decay=args.decay)
 		model.compile(loss=weighted_loss(r=data_weights), optimizer=adam, metrics=['accuracy'])
-		#model.compile(loss='categorical_crossentropy', optimizer=adam, metrics=['accuracy'])
 		earlystopping = EarlyStopping(monitor='loss', min_delta=0, patience=0)
 		checkpoint = ModelCheckpoint(filepath='static_model/best_checkpoint_mlp.hdf5', monitor='val_loss', save_best_only=True)
-		callbacks_list = [earlystopping]
+		callbacks_list = [earlystopping, checkpoint]
 		history = model.fit(x=train_data, y=train_label, batch_size=args.batch_size, epochs=args.train_epochs, verbose=2, 
 							  callbacks=callbacks_list)  
 		# save the model
@@ -222,13 +189,10 @@ if __name__ == '__main__':
 	train_data, train_label, train_size, train_info = read_2D_data('./data/CS_Ftrain_nor.arff')
 	test_data, test_label, test_size, test_info = read_2D_data('./data/CS_Ftest_nor.arff')
 	
-	mlp_teacher_label = np.load('mlp_teacher_label_4562.npy')
-	conv_teacher_label = np.load('conv_teacher_label_4642.npy')
-	merge_teacher_label = mlp_teacher_label*0.5 + conv_teacher_label*0.5
 
 	print("Train data：{0} , {1}".format(train_data.shape, train_label.shape))
 	print("Test data：{0} , {1}".format(test_data.shape, test_label.shape))
-	train_MLP(train_data, mlp_teacher_label, train_size, test_data, test_label, test_size)
+	train_MLP(train_data, train_label, train_size, test_data, test_label, test_size)
 	#train_CNN(train_data, train_label, train_size, test_data, test_label, test_size)
 
 

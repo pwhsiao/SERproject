@@ -19,7 +19,6 @@ from keras.regularizers import *
 from keras import backend as K
 from scipy import stats
 from utils import *
-from ddrop import DropConnectDense, DropConnect
 
 # Learning parameters
 BATCH_SIZE = 100
@@ -221,18 +220,13 @@ def train_RNN(train_data, train_label, test_data, test_label, test_size, max_len
 	args = get_arguments()
 
 	dynamic_input = Input(shape=[max_length, args.dynamic_features], dtype='float32', name='dynamic_input')
-	dynamic_input_dropout = Dropout(rate=0.2)(dynamic_input)
 	# LSTM module
 	lstm1 = LSTM(units=60, activation='tanh', return_sequences=True, recurrent_dropout=0.5, name='lstm1')(dynamic_input_dropout)	
 	lstm1 = Dropout(rate=0.5, noise_shape=(1, 60))(lstm1)
-	#blstm_f, blstm_b = Bidirectional(NestedLSTM(units=args.lstm_units, depth=2, return_sequences=True), merge_mode=None ,name='blstm_1')(dynamic_input)
-	#blstm_f, blstm_b = Bidirectional(LSTM(units=args.lstm_units, activation='tanh', return_sequences=True, dropout=0.4, recurrent_dropout=0.2), merge_mode=None ,name='blstm_1')(dynamic_input)
-	#blstm_out = maximum([blstm_f, blstm_b])
-	# attention mechanism module (forward)
+	
+	# attention mechanism module 
 	attention_dense1_f = Dense(units=50, activation='tanh', use_bias=False, name='attention_dense1_f')(lstm1)
-	attention_dense1_f = Dropout(rate=0.5)(attention_dense1_f)
 	attention_dense2_f = Dense(1, use_bias=False, name='attention_dense2_f')(attention_dense1_f)
-	attention_dense2_f = Dropout(rate=0.5)(attention_dense2_f)
 	attention_flatten_f = Flatten()(attention_dense2_f)
 	attention_softmax_f = Activation('softmax', name='attention_weights_f')(attention_flatten_f)
 	attention_repeat_f = RepeatVector(60)(attention_softmax_f)
@@ -240,24 +234,7 @@ def train_RNN(train_data, train_label, test_data, test_label, test_size, max_len
 	attention_multiply_f = multiply([lstm1, attention_permute_f])
 	attention_sum_f = Lambda(lambda xin: K.sum(xin, axis=1), name='attention_sum_f')(attention_multiply_f)# 60
 
-	'''
-	# attention mechanism module (backward)
-	attention_dense1_b = Dense(args.attention_layer_units, activation='tanh', use_bias=False, name='attention_dense1_b')(blstm_b)
-	attention_dense2_b = Dense(1, use_bias=False, name='attention_dense2_b')(attention_dense1_b)
-	attention_flatten_b = Flatten()(attention_dense2_b)
-	attention_softmax_b = Activation('softmax', name='attention_weights_b')(attention_flatten_b)
-	attention_repeat_b = RepeatVector(args.lstm_units)(attention_softmax_b)
-	attention_permute_b = Permute([2, 1])(attention_repeat_b)
-	attention_multiply_b = multiply([blstm_b, attention_permute_b])
-	attention_sum_b = Lambda(lambda xin: K.sum(xin, axis=1), name='attention_sum_b')(attention_multiply_b)# 60
 	
-	attention_weights_avg = average([attention_softmax_f, attention_softmax_b])
-	attention_repeat = RepeatVector(args.lstm_units)(attention_weights_avg)
-	attention_permute = Permute([2, 1])(attention_repeat)
-	attention_multiply = multiply([blstm_out, attention_permute])
-	attention_sum = Lambda(lambda xin: K.sum(xin, axis=1), name='attention_sum')(attention_multiply)# 60
-	'''
-	#fb_merge = concatenate([attention_sum_f, attention_sum_b])
 	
 	# classifier module
 	#output = average([output_f, output_b])
@@ -356,11 +333,7 @@ def train_CNN(train_data, train_label, test_data, test_label, test_size, data_we
 		attention_conv_4 = Conv2D(filters=10, kernel_size=(2,2), padding='same', activation='tanh', use_bias=False, name='att_conv4')(attention_interp_2)#8x6x1
 		attention_conv_4 = Dropout(rate=0.5)(attention_conv_4)
 		attention_weights = Activation('softmax', name='attention_weights')(attention_conv_4)
-		# attention_flatten = Flatten()(attention_conv_4)# 48
-		# attention_weights = Activation('softmax', name='attention_weights')(attention_flatten)# 48
-		# attention_weights = RepeatVector(10)(attention_weights)# 10x48
-		# attention_weights = Permute([2, 1])(attention_weights)# 48x10
-		# attention_weights = Reshape((8,6,10))(attention_weights)# 8x6x10
+		
 
 		attention_representation = multiply([conv4_maxout, attention_weights])
 		attention_add = add([conv4_maxout, attention_representation])
@@ -370,7 +343,6 @@ def train_CNN(train_data, train_label, test_data, test_label, test_size, data_we
 		model = Model(inputs=cnn_input, outputs=output)
 		model.summary()
 
-		#model.load_weights('./static_model/conv_ts_att_4642_model.h5')
 		if args.load_model == '':
 			adam = Adam(lr=args.learning_rate, decay=args.decay)
 			model.compile(loss=weighted_loss(r=data_weights), optimizer=adam, metrics=['accuracy'])
@@ -403,12 +375,9 @@ def train_MLP(train_data, train_label, test_data, test_label, test_size, data_we
 	model = Model(inputs=mlp_input, outputs=output)
 	model.summary()
 
-	#model.load_weights('./static_model/mlp_ts_46_model.h5')
 	if args.load_model == '':
 		adam = Adam(lr=args.learning_rate, decay=args.decay)
-		#adam = Adam()
 		model.compile(loss=weighted_loss(r=data_weights), optimizer=adam, metrics=['accuracy'])
-		#model.compile(loss='categorical_crossentropy', optimizer=adam, metrics=['accuracy'])
 		earlystopping = EarlyStopping(monitor='loss', min_delta=0, patience=0)
 		callbacks_list = [earlystopping]
 		history = model.fit(x=train_data, y=train_label, batch_size=args.batch_size, epochs=args.train_epochs, verbose=2, 
@@ -441,11 +410,6 @@ if __name__ == '__main__':
 	test_seq_length = np.load('./data/fau_test_length_lld_delta.npy')
 	max_length = max(np.amax(train_seq_length), np.amax(test_seq_length))
 
-	mlp_teacher_label = np.load('mlp_teacher_label_4562.npy')
-	cnn_teacher_label = np.load('conv_teacher_label_4642.npy')
-	rnn_teacher_label = np.load('dynamic_teacher_label_4634.npy')
-	#train_data = sequence.pad_sequences(train_data, maxlen=max_length, dtype='float32')
-	#test_data = sequence.pad_sequences(test_data, maxlen=max_length, dtype='float32')
 
 	print('==========================================================')
 	print ('Dynamic:')
@@ -478,7 +442,6 @@ if __name__ == '__main__':
 			bag_dynamic_train_data, bag_train_label = MCAR_missing(bag_dynamic_train_data, bag_train_label, 0.05)
 			print ('After MCAR missing...')
 			print (bag_dynamic_train_data.shape , bag_train_label.shape)
-			#bag_teacher_label = train_RNN(bag_dynamic_train_data, bag_train_label, bag_dynamic_train_data, bag_train_label, bag_train_size, max_length, data_weights)
 			predict = train_RNN(bag_dynamic_train_data, bag_train_label, dynamic_test_data, test_label, test_size, max_length, data_weights, args.model_root_dir)
 			predicts[i] = predict
 			args.model_root_dir = temp
@@ -501,7 +464,6 @@ if __name__ == '__main__':
 			bag_static_train_data, bag_train_label = MCAR_missing(bag_static_train_data, bag_train_label, 0.05)
 			print ('After MCAR missing...')
 			print (bag_static_train_data.shape , bag_train_label.shape)
-			#bag_teacher_label = train_CNN(bag_static_train_data, bag_train_label, bag_static_train_data, bag_train_label, bag_train_size, data_weights)
 			predict = train_CNN(bag_static_train_data, bag_train_label, static_test_data, test_label, test_size, data_weights, args.model_root_dir)
 			predicts[i] = predict
 			args.model_root_dir = temp
@@ -526,14 +488,11 @@ if __name__ == '__main__':
 			bag_static_train_data, bag_train_label = MCAR_missing(bag_static_train_data, bag_train_label, 0.05)
 			print ('After MCAR missing...')
 			print (bag_static_train_data.shape , bag_train_label.shape)
-			#bag_teacher_label = train_MLP(bag_static_train_data, bag_train_label, bag_static_train_data, bag_train_label, bag_train_size, data_weights)
 			predict = train_MLP(bag_static_train_data, bag_train_label, static_test_data, test_label, test_size, data_weights, args.model_root_dir)
 			predicts[i] = predict
 			args.model_root_dir = temp
 			print('==========================================================')
 
 	final_predict = voting(predicts)
-	#final_predict = np.mean(predicts, axis=0)
-	#final_predict = stats.gmean(predicts, axis=0)
 	show_confusion_matrix(final_predict, test_label, test_size)
 	
