@@ -1,88 +1,57 @@
 # Project Title
 
-One Paragraph of project description goes here
+This project implements the speech emotion recognition system on FAU-Aibo corpus.
 
-## Getting Started
+## Prerequisites
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
-
-### Prerequisites
-
-What things you need to install the software and how to install them
+What things you need to install the software.
 
 ```
-Give examples
+Tensorflow
+Keras
+Numpy
+Matplotlib
+Scipy
+Python(>= 3.5.5)
 ```
 
-### Installing
+## Introduction
 
-A step by step series of examples that tell you how to get a development env running
+Our system consists of three parts: static model, dynamic model and ensemble model.
 
-Say what the step will be
+The static model is based on CNN and MLP. The performance measured by unweighted average recall (UA recall) can achieve 46.2%, 46.4% respectively.
 
-```
-Give the example
-```
+The static model is based on RNN. The UA recall can achieve 47.2%.
 
-And repeat
+The ensemble model is based on bagging, maxout-unit and interpolaton. The UA recall implemented by interpolaton can achieve 50.5%.
 
-```
-until finished
-```
 
-End with an example of getting some data out of the system or using it for a little demo
+## Dataset
+[FAU-Aibo](https://www5.cs.fau.de/de/mitarbeiter/steidl-stefan/fau-aibo-emotion-corpus/) is a speech emotion database. It is used in [Interspeech 2009 Emotion Challenge](http://mediatum.ub.tum.de/doc/980035/292947.pdf), including a training set of 9,959 speech chunks and a test set of 8,257 chunks. For the five-category
+classification problem, the emotion labels are merged into angry, emphatic, neutral, positive and rest. The data of each
+emotion category is summarized in the following Table.
+
+
+|           | angry | emphatic | neutral | positive | rest | total |
+|:---------:|:-----:|:--------:|:-------:|:--------:|:----:|:-----:|
+| train set |  881  |   2,093  |  5,590  |    674   |  721 | 9,959 |
+|  test set |  611  |   1,508  |  5,377  |    215   |  546 | 8,257 |
+
+
+## Acoustic features and pre-processing
+The acoustic features used in our experiment is the same as those used in the Emotion Challenge extracted by
+the [openSMILE](https://audeering.com/technology/opensmile/) toolkit.
+
+For the static model, we use [Cross-speaker Histogram Equalization (CSHE)](http://etd.lib.nsysu.edu.tw/ETD-db/ETD-search/getfile?URN=etd-0730114-173740&filename=etd-0730114-173740.pdf) to reduce the divergence due to speaker while keeping emotional variation.
+
+For the dynamic model, we apply Cepstral mean and variance normalization (CMVN) to eliminate the divergence of signal due to speaker while keeping emotional variation. Each feature dimension of every speaker is normalized to zero mean and unit variance.
+
+
 
 ## Running the tests
 
 Explain how to run the automated tests for this system
 
-### Break down into end to end tests
 
-Explain what these tests test and why
 
-```
-Give an example
-```
-
-### And coding style tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
-
-## Deployment
-
-Add additional notes about how to deploy this on a live system
-
-## Built With
-
-* [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Maven](https://maven.apache.org/) - Dependency Management
-* [ROME](https://rometools.github.io/rome/) - Used to generate RSS Feeds
-
-## Contributing
-
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
-
-## Versioning
-
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/your/project/tags). 
-
-## Authors
-
-* **Billie Thompson** - *Initial work* - [PurpleBooth](https://github.com/PurpleBooth)
-
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
-## Acknowledgments
-
-* Hat tip to anyone whose code was used
-* Inspiration
-* etc
 
