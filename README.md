@@ -10,7 +10,7 @@ What things you need to install the software.
 - Numpy
 - Matplotlib
 - Scipy
-- Python(>= 3.5.5)
+- Python(>= 3.5.2)
 
 
 ## Introduction
