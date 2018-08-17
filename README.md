@@ -5,10 +5,8 @@
 
 What things you need to install the software.
 
-+ test
-
 ```
-+ Tensorflow
+> -  Tensorflow
 * Keras
 - Numpy
 - Matplotlib
