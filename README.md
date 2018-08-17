@@ -49,8 +49,17 @@ For the dynamic model, we apply Cepstral mean and variance normalization (CMVN) 
 
 
 ## Running the tests
+For static model, running the following command:
 
-Explain how to run the automated tests for this system
+```
+python3 static_model.py
+```
+
+For dynamic model, running the following command:
+
+```
+python3 dynamic_model.py
+```
 
 
 
