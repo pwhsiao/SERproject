@@ -5,8 +5,8 @@
 
 What things you need to install the software.
 
-<pre>- Tensorflow
-* Keras
+- Tensorflow
+- Keras
 - Numpy
 - Matplotlib
 - Scipy
